@@ -13,12 +13,23 @@ document.getElementById('send-button').addEventListener('click', function() {
 
 function handleFileUpload(file, userInput) {
     const reader = new FileReader();
+    
+    // Check the file type
+    if (file.type.startsWith('text')) {
+        reader.readAsText(file);
+    } else if (file.type.startsWith('image')) {
+        reader.readAsDataURL(file);  // If it's an image, read it as a data URL
+    } else {
+        console.error('Unsupported file type:', file.type);
+        return;
+    }
+    
     reader.onload = function(e) {
         const fileContent = e.target.result;
         sendMessage(userInput, fileContent); // Send both user input and file content
     };
-    reader.readAsText(file);
 }
+
 
 async function sendMessage(content, fileContent) {
     const messages = document.getElementById('messages');
@@ -36,6 +47,11 @@ async function sendMessage(content, fileContent) {
                 'Content-Type': 'application/json'
             }
         });
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status: ${response.status}`);
+        }
+
         const data = await response.json();
         
         // Add AI response to the chat
@@ -46,7 +62,9 @@ async function sendMessage(content, fileContent) {
     } catch (error) {
         console.error('Error:', error);
         let errorMessage = document.createElement('div');
-        errorMessage.textContent = 'Error: Could not connect to the API.';
+        errorMessage.textContent = 'Error: Could not connect to the API or the API response failed.';
         messages.appendChild(errorMessage);
     }
+    const combinedMessage = fileContent ? `${content}\n\nFile Content: ${fileContent}` : content;
+
 }
